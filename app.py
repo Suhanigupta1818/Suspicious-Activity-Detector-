@@ -38,36 +38,45 @@ with st.sidebar:
 
 # --- LOAD MODEL ENGINE ---
 # --- LOAD MODEL ENGINE (The Ultimate Bypass) ---
+# --- LOAD MODEL ENGINE (The Professional Bypass) ---
 @st.cache_resource
 def load_my_model():
     import tensorflow as tf
-    # Bypass InputLayer keyword mismatch
-    from tensorflow.keras.layers import InputLayer
-    
+    from tensorflow.keras.layers import InputLayer, Conv2D
+
+    # 1. Custom InputLayer to ignore Keras 3 specific keys
     class CustomInputLayer(InputLayer):
         def __init__(self, *args, **kwargs):
-            # Sabhi naye keywords jo Keras 2.x nahi samajhta, unhe delete kar rahe hain
-            forbidden_keys = ['batch_shape', 'optional', 'ragged', 'sparse']
-            for key in forbidden_keys:
+            for key in ['batch_shape', 'optional', 'ragged', 'sparse']:
                 kwargs.pop(key, None)
-            # Keras 2.x expects 'batch_input_shape' instead of 'batch_shape'
+            super().__init__(*args, **kwargs)
+
+    # 2. Custom Conv2D to ignore 'dtype' policy mismatch
+    class CustomConv2D(Conv2D):
+        def __init__(self, *args, **kwargs):
+            if 'dtype' in kwargs and isinstance(kwargs['dtype'], dict):
+                kwargs.pop('dtype')
             super().__init__(*args, **kwargs)
 
     try:
-        # Load model using the custom class
+        # Load using a custom object scope to map Keras 3 classes to our bypass classes
+        custom_objects = {
+            'InputLayer': CustomInputLayer,
+            'Conv2D': CustomConv2D,
+            'DTypePolicy': lambda **x: None # Ignores the policy error
+        }
+        
         return tf.keras.models.load_model(
             'final_improved_model.h5', 
             compile=False, 
-            custom_objects={'InputLayer': CustomInputLayer}
+            custom_objects=custom_objects
         )
     except Exception as e:
-        # Agar fir bhi fail ho, toh iska matlab version gap bahut zyada hai
         st.error(f"Engine Error: {e}")
         return None
 
 # Global Model Assignment
 model = load_my_model()
-      
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
