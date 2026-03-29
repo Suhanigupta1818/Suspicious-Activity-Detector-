@@ -9,7 +9,7 @@ import time
 
 # --- CONFIGURATION ---
 SENDER_EMAIL = "gsuhani053@gmail.com"
-SENDER_PASSWORD = "kuem fujp pnmz oyxe" 
+SENDER_PASSWORD = "#" 
 RECEIVER_EMAIL = "gsuhani053@gmail.com"
 
 # --- PAGE SETUP ---
