@@ -39,12 +39,28 @@ with st.sidebar:
 
 # --- LOAD MODEL ---
 
+# --- LOAD MODEL ---
 @st.cache_resource
 def load_my_model():
-    return tf.keras.models.load_model('final_improved_model.h5', compile=False) # <--- Yahan space zaroori hai
+    # InputLayer ke keyword issues ko bypass karne ke liye custom logic
+    from tensorflow.keras.layers import InputLayer
+    
+    class CustomInputLayer(InputLayer):
+        def __init__(self, *args, **kwargs):
+            # Jo keywords error de rahe hain, unhe delete kar rahe hain
+            kwargs.pop('batch_shape', None)
+            kwargs.pop('optional', None)
+            super().__init__(*args, **kwargs)
 
-with st.spinner("Initializing AI Engine..."):
-    model = load_my_model()
+    try:
+        return tf.keras.models.load_model(
+            'final_improved_model.h5', 
+            compile=False,
+            custom_objects={'InputLayer': CustomInputLayer}
+        )
+    except Exception as e:
+        st.error(f"Model Load Error: {e}")
+        return None
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
