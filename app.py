@@ -38,9 +38,10 @@ with st.sidebar:
     st.write("**Alert Mode:** Email Enabled 📧")
 
 # --- LOAD MODEL ---
+
 @st.cache_resource
 def load_my_model():
-return tf.keras.models.load_model('final_improved_model.h5', compile=False)
+    return tf.keras.models.load_model('final_improved_model.h5', compile=False) # <--- Yahan space zaroori hai
 
 with st.spinner("Initializing AI Engine..."):
     model = load_my_model()
