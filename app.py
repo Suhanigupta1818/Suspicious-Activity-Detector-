@@ -10,19 +10,18 @@ import time
 # --- CONFIGURATION ---
 SENDER_EMAIL = "gsuhani053@gmail.com"
 SENDER_PASSWORD = "kuem fujp pnmz oyxe" 
-RECEIVER_EMAIL = "gsuhani053@gmail.com" # Maine yahan typo fix kar diya hai (@ missing tha)
+RECEIVER_EMAIL = "gsuhani053@gmail.com"
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="AI Sentinel | Security", page_icon="🛡️", layout="wide")
 
-# Custom CSS for better styling
+# Custom CSS for Professional UI
 st.markdown("""
     <style>
     .main { background-color: #f5f7f9; }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; font-weight: bold; }
     .stAlert { border-radius: 10px; }
-    .reportview-container .main .block-container { padding-top: 2rem; }
-    h1 { color: #1e3d59; }
+    h1 { color: #1e3d59; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -37,15 +36,12 @@ with st.sidebar:
     st.write("**Accuracy:** 80.00%")
     st.write("**Alert Mode:** Email Enabled 📧")
 
-# --- LOAD MODEL ---
-
-# --- LOAD MODEL ---
-# --- LOAD MODEL ---
+# --- LOAD MODEL ENGINE ---
 @st.cache_resource
 def load_my_model():
     from tensorflow.keras.layers import InputLayer
     
-    # Keras 3 compatibility hack
+    # Keras 3 to 2 Compatibility Hack
     class CustomInputLayer(InputLayer):
         def __init__(self, *args, **kwargs):
             kwargs.pop('batch_shape', None)
@@ -53,44 +49,30 @@ def load_my_model():
             super().__init__(*args, **kwargs)
 
     try:
-        # 1. Pehle normal load karke dekhte hain
-        return tf.keras.models.load_model('final_improved_model.h5', compile=False, custom_objects={'InputLayer': CustomInputLayer})
+        # Load model with custom InputLayer to prevent deserialization errors
+        return tf.keras.models.load_model(
+            'final_improved_model.h5', 
+            compile=False, 
+            custom_objects={'InputLayer': CustomInputLayer}
+        )
     except Exception as e:
-        st.warning(f"Standard load failed, trying alternative... {e}")
         try:
-            # 2. Agar fail hua toh simple load (compile=False is key)
+            # Fallback for standard load
             return tf.keras.models.load_model('final_improved_model.h5', compile=False)
         except Exception as e2:
-            st.error(f"Fatal Error: Model cannot be loaded. {e2}")
+            st.error(f"Fatal Engine Error: {e2}")
             return None
 
-# YAHAN DHYAN DEIN: global model variable define hona zaroori hai
+# Global Model Assignment (Crucial to prevent NameError)
 model = load_my_model()
-
-# Safety Check: Agar model load nahi hua toh prediction skip karein
-if model is None:
-    st.error("Model Engine is Offline. Check logs.")
-    st.stop()
-
-   
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
         current_time = datetime.now().strftime("%I:%M %p | %d %b %Y")
         msg = EmailMessage()
-        msg.set_content(f"""
-        🚨 SECURITY ALERT TRIGGERED 🚨
-        
-        System has detected suspicious behavior in the monitored area.
-        
-        Timestamp: {current_time}
-        AI Confidence Score: {confidence:.2f}%
-        
-        Action Taken: Automated Admin Notification.
-        Please review the footage immediately.
-        """)
-        msg['Subject'] = f"⚠️ CRITICAL ALERT: Suspicious Activity Detected"
+        msg.set_content(f"🚨 SECURITY ALERT TRIGGERED 🚨\n\nSuspicious behavior detected.\nTime: {current_time}\nAI Confidence: {confidence:.2f}%\n\nPlease check the surveillance feed immediately.")
+        msg['Subject'] = f"⚠️ CRITICAL ALERT: Suspicious Activity"
         msg['From'] = SENDER_EMAIL
         msg['To'] = RECEIVER_EMAIL
 
@@ -123,11 +105,16 @@ def extract_frames(video_path, num_frames=15, img_size=(64, 64)):
 st.title("🛡️ Smart Surveillance Dashboard")
 st.markdown("---")
 
+# Stop the app if model is missing
+if model is None:
+    st.error("AI Model engine could not be initialized. Verify 'final_improved_model.h5' exists.")
+    st.stop()
+
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("📁 Video Input")
-    uploaded_file = st.file_uploader("Upload surveillance footage (MP4, AVI)", type=["mp4", "avi"])
+    uploaded_file = st.file_uploader("Upload footage (MP4, AVI)", type=["mp4", "avi"])
     if uploaded_file:
         with open("temp_video.mp4", "wb") as f:
             f.write(uploaded_file.read())
@@ -138,13 +125,14 @@ with col2:
     if uploaded_file:
         if st.button("START THREAT SCAN"):
             progress_bar = st.progress(0)
-            for percent_complete in range(100):
+            for pc in range(100):
                 time.sleep(0.01)
-                progress_bar.progress(percent_complete + 1)
+                progress_bar.progress(pc + 1)
             
             frames = extract_frames("temp_video.mp4")
             
             if frames is not None:
+                # Preprocessing
                 test_input = np.expand_dims(frames, axis=0).astype('float32') / 255.0
                 prediction = model.predict(test_input)[0][0]
                 
@@ -154,14 +142,12 @@ with col2:
                     st.error(f"⚠️ **SUSPICIOUS ACTIVITY DETECTED**")
                     st.metric(label="Threat Confidence", value=f"{conf:.2f}%", delta="CRITICAL", delta_color="inverse")
                     
-                    with st.status("Initiating Protocol...", expanded=True) as status:
-                        st.write("Logging activity...")
-                        st.write("Contacting server...")
+                    with st.status("Initiating Alert Protocol...") as status:
                         if send_email_alert(conf):
                             st.write("Email Notification Sent! 📧")
                         else:
-                            st.write("Email Service Offline. ❌")
-                        status.update(label="Alert Protocol Complete", state="complete", expanded=False)
+                            st.write("Email Service Error. Check App Password.")
+                        status.update(label="Alert Protocol Complete", state="complete")
                 else:
                     conf = (1 - prediction) * 100
                     st.success(f"✅ **NORMAL BEHAVIOR**")
@@ -169,7 +155,7 @@ with col2:
             else:
                 st.warning("Video too short for AI analysis.")
     else:
-        st.info("Waiting for video upload to begin scanning...")
+        st.info("Please upload a video to begin scanning.")
 
 st.divider()
-st.caption("Developed by Suhani | AI & ML Project 2024")
+st.caption(f"Developed by Suhani | AI & ML College Project | {datetime.now().year}")
