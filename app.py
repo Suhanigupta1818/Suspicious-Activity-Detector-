@@ -40,27 +40,39 @@ with st.sidebar:
 # --- LOAD MODEL ---
 
 # --- LOAD MODEL ---
+# --- LOAD MODEL ---
 @st.cache_resource
 def load_my_model():
-    # InputLayer ke keyword issues ko bypass karne ke liye custom logic
     from tensorflow.keras.layers import InputLayer
     
+    # Keras 3 compatibility hack
     class CustomInputLayer(InputLayer):
         def __init__(self, *args, **kwargs):
-            # Jo keywords error de rahe hain, unhe delete kar rahe hain
             kwargs.pop('batch_shape', None)
             kwargs.pop('optional', None)
             super().__init__(*args, **kwargs)
 
     try:
-        return tf.keras.models.load_model(
-            'final_improved_model.h5', 
-            compile=False,
-            custom_objects={'InputLayer': CustomInputLayer}
-        )
+        # 1. Pehle normal load karke dekhte hain
+        return tf.keras.models.load_model('final_improved_model.h5', compile=False, custom_objects={'InputLayer': CustomInputLayer})
     except Exception as e:
-        st.error(f"Model Load Error: {e}")
-        return None
+        st.warning(f"Standard load failed, trying alternative... {e}")
+        try:
+            # 2. Agar fail hua toh simple load (compile=False is key)
+            return tf.keras.models.load_model('final_improved_model.h5', compile=False)
+        except Exception as e2:
+            st.error(f"Fatal Error: Model cannot be loaded. {e2}")
+            return None
+
+# YAHAN DHYAN DEIN: global model variable define hona zaroori hai
+model = load_my_model()
+
+# Safety Check: Agar model load nahi hua toh prediction skip karein
+if model is None:
+    st.error("Model Engine is Offline. Check logs.")
+    st.stop()
+
+   
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
