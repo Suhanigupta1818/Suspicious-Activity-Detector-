@@ -37,34 +37,37 @@ with st.sidebar:
     st.write("**Alert Mode:** Email Enabled 📧")
 
 # --- LOAD MODEL ENGINE ---
+# --- LOAD MODEL ENGINE (The Ultimate Bypass) ---
 @st.cache_resource
 def load_my_model():
+    import tensorflow as tf
+    # Bypass InputLayer keyword mismatch
     from tensorflow.keras.layers import InputLayer
     
-    # Keras 3 to 2 Compatibility Hack
     class CustomInputLayer(InputLayer):
         def __init__(self, *args, **kwargs):
-            kwargs.pop('batch_shape', None)
-            kwargs.pop('optional', None)
+            # Sabhi naye keywords jo Keras 2.x nahi samajhta, unhe delete kar rahe hain
+            forbidden_keys = ['batch_shape', 'optional', 'ragged', 'sparse']
+            for key in forbidden_keys:
+                kwargs.pop(key, None)
+            # Keras 2.x expects 'batch_input_shape' instead of 'batch_shape'
             super().__init__(*args, **kwargs)
 
     try:
-        # Load model with custom InputLayer to prevent deserialization errors
+        # Load model using the custom class
         return tf.keras.models.load_model(
             'final_improved_model.h5', 
             compile=False, 
             custom_objects={'InputLayer': CustomInputLayer}
         )
     except Exception as e:
-        try:
-            # Fallback for standard load
-            return tf.keras.models.load_model('final_improved_model.h5', compile=False)
-        except Exception as e2:
-            st.error(f"Fatal Engine Error: {e2}")
-            return None
+        # Agar fir bhi fail ho, toh iska matlab version gap bahut zyada hai
+        st.error(f"Engine Error: {e}")
+        return None
 
-# Global Model Assignment (Crucial to prevent NameError)
+# Global Model Assignment
 model = load_my_model()
+      
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
