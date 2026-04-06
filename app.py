@@ -3,26 +3,26 @@ import tensorflow as tf
 import cv2
 import numpy as np
 import smtplib
-import os
 from email.message import EmailMessage
 from datetime import datetime
 import time
 
 # --- CONFIGURATION ---
 SENDER_EMAIL = "gsuhani053@gmail.com"
-SENDER_PASSWORD = "#" 
-RECEIVER_EMAIL = "gsuhani053@gmail.com"
+SENDER_PASSWORD = "kuem fujp pnmz oyxe" 
+RECEIVER_EMAIL = "gsuhani053@gmail.com" # Maine yahan typo fix kar diya hai (@ missing tha)
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="AI Sentinel | Security", page_icon="🛡️", layout="wide")
 
-# Custom CSS for Professional UI
+# Custom CSS for better styling
 st.markdown("""
     <style>
     .main { background-color: #f5f7f9; }
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; font-weight: bold; }
     .stAlert { border-radius: 10px; }
-    h1 { color: #1e3d59; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .reportview-container .main .block-container { padding-top: 2rem; }
+    h1 { color: #1e3d59; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -37,57 +37,31 @@ with st.sidebar:
     st.write("**Accuracy:** 80.00%")
     st.write("**Alert Mode:** Email Enabled 📧")
 
-# --- LOAD MODEL ENGINE ---
-# --- LOAD MODEL ENGINE (The Final Fix) ---
-import streamlit as st
-import tensorflow as tf
-import cv2
-import numpy as np
-import smtplib
-import os  # <--- YE LINE ADD KARNA ZAROORI HAI
-from email.message import EmailMessage
-from datetime import datetime
-import time
-
-# ... (baaki ka page setup aur sidebar code wahi rahega)
-
+# --- LOAD MODEL ---
 @st.cache_resource
 def load_my_model():
-    # Model path
-    model_path = 'final_improved_model.h5'
-    
-    # Check if file exists using os
-    if not os.path.exists(model_path):
-        st.error(f"Error: {model_path} not found!")
-        return None
+    return tf.keras.models.load_model('final_improved_model.h5')
 
-    try:
-        # Keras 2 compatible loading for Keras 3 environments
-        # Hum compile=False rakhte hain kyunki inference mein optimizer ki zaroorat nahi hoti
-        custom_objects = {
-            'InputLayer': tf.keras.layers.InputLayer,
-            'Conv2D': tf.keras.layers.Conv2D
-        }
-        
-        return tf.keras.models.load_model(
-            model_path, 
-            compile=False, 
-            custom_objects=custom_objects
-        )
-    except Exception as e:
-        st.error(f"Engine Error: {e}")
-        return None
-
-# Global Model Assignment
-model = load_my_model()
+with st.spinner("Initializing AI Engine..."):
+    model = load_my_model()
 
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
         current_time = datetime.now().strftime("%I:%M %p | %d %b %Y")
         msg = EmailMessage()
-        msg.set_content(f"🚨 SECURITY ALERT TRIGGERED 🚨\n\nSuspicious behavior detected.\nTime: {current_time}\nAI Confidence: {confidence:.2f}%\n\nPlease check the surveillance feed immediately.")
-        msg['Subject'] = f"⚠️ CRITICAL ALERT: Suspicious Activity"
+        msg.set_content(f"""
+        🚨 SECURITY ALERT TRIGGERED 🚨
+        
+        System has detected suspicious behavior in the monitored area.
+        
+        Timestamp: {current_time}
+        AI Confidence Score: {confidence:.2f}%
+        
+        Action Taken: Automated Admin Notification.
+        Please review the footage immediately.
+        """)
+        msg['Subject'] = f"⚠️ CRITICAL ALERT: Suspicious Activity Detected"
         msg['From'] = SENDER_EMAIL
         msg['To'] = RECEIVER_EMAIL
 
@@ -120,16 +94,11 @@ def extract_frames(video_path, num_frames=15, img_size=(64, 64)):
 st.title("🛡️ Smart Surveillance Dashboard")
 st.markdown("---")
 
-# Stop the app if model is missing
-if model is None:
-    st.error("AI Model engine could not be initialized. Verify 'final_improved_model.h5' exists.")
-    st.stop()
-
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("📁 Video Input")
-    uploaded_file = st.file_uploader("Upload footage (MP4, AVI)", type=["mp4", "avi"])
+    uploaded_file = st.file_uploader("Upload surveillance footage (MP4, AVI)", type=["mp4", "avi"])
     if uploaded_file:
         with open("temp_video.mp4", "wb") as f:
             f.write(uploaded_file.read())
@@ -140,14 +109,13 @@ with col2:
     if uploaded_file:
         if st.button("START THREAT SCAN"):
             progress_bar = st.progress(0)
-            for pc in range(100):
+            for percent_complete in range(100):
                 time.sleep(0.01)
-                progress_bar.progress(pc + 1)
+                progress_bar.progress(percent_complete + 1)
             
             frames = extract_frames("temp_video.mp4")
             
             if frames is not None:
-                # Preprocessing
                 test_input = np.expand_dims(frames, axis=0).astype('float32') / 255.0
                 prediction = model.predict(test_input)[0][0]
                 
@@ -157,12 +125,14 @@ with col2:
                     st.error(f"⚠️ **SUSPICIOUS ACTIVITY DETECTED**")
                     st.metric(label="Threat Confidence", value=f"{conf:.2f}%", delta="CRITICAL", delta_color="inverse")
                     
-                    with st.status("Initiating Alert Protocol...") as status:
+                    with st.status("Initiating Protocol...", expanded=True) as status:
+                        st.write("Logging activity...")
+                        st.write("Contacting server...")
                         if send_email_alert(conf):
                             st.write("Email Notification Sent! 📧")
                         else:
-                            st.write("Email Service Error. Check App Password.")
-                        status.update(label="Alert Protocol Complete", state="complete")
+                            st.write("Email Service Offline. ❌")
+                        status.update(label="Alert Protocol Complete", state="complete", expanded=False)
                 else:
                     conf = (1 - prediction) * 100
                     st.success(f"✅ **NORMAL BEHAVIOR**")
@@ -170,7 +140,7 @@ with col2:
             else:
                 st.warning("Video too short for AI analysis.")
     else:
-        st.info("Please upload a video to begin scanning.")
+        st.info("Waiting for video upload to begin scanning...")
 
 st.divider()
-st.caption(f"Developed by Suhani | AI & ML College Project | {datetime.now().year}")
+st.caption("Developed by Suhani | AI & ML Project 2024")
