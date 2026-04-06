@@ -41,35 +41,31 @@ with st.sidebar:
 @st.cache_resource
 def load_my_model():
     import tensorflow as tf
-    
+    import os
+
     model_path = 'final_improved_model.h5'
     
-    # Check if file exists
     if not os.path.exists(model_path):
+        st.error(f"File {model_path} not found in GitHub repository!")
         return None
 
     try:
-        # Keras 3 often fails with custom layers from Keras 2
-        # We use compile=False to avoid loading training configurations
-        # And we map any missing layers to standard Keras layers
-        custom_objects = {
-            'InputLayer': tf.keras.layers.InputLayer,
-            'BatchNormalization': tf.keras.layers.BatchNormalization,
-            'Conv2D': tf.keras.layers.Conv2D
-        }
-        
-        curr_model = tf.keras.models.load_model(
-            model_path, 
-            custom_objects=custom_objects, 
-            compile=False
-        )
-        return curr_model
+        # Keras 2 models load karne ka sabse safe tarika Keras 3 environment mein:
+        # Hum compile=False rakhenge taaki optimizer aur loss functions load na ho (jo inference mein chahiye bhi nahi)
+        model = tf.keras.models.load_model(model_path, compile=False)
+        return model
     except Exception as e:
-        # Agar ab bhi error aaye, toh hum architecture manually rebuild karke 
-        # sirf weights load kar sakte hain, par pehle ye try karein.
-        st.error(f"Engine Error: {e}")
-        return None
-
+        # Agar compile=False se bhi na ho, toh ye "Generic Object" bypass try karein
+        try:
+            model = tf.keras.models.load_model(
+                model_path, 
+                custom_objects={'SafeConfigParser': None}, 
+                compile=False
+            )
+            return model
+        except Exception as e2:
+            st.error(f"Engine Error: {e2}")
+            return None
 # Global Model Assignment
 model = load_my_model()
 
