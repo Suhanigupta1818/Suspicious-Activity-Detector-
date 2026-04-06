@@ -3,6 +3,7 @@ import tensorflow as tf
 import cv2
 import numpy as np
 import smtplib
+import os
 from email.message import EmailMessage
 from datetime import datetime
 import time
@@ -38,34 +39,45 @@ with st.sidebar:
 
 # --- LOAD MODEL ENGINE ---
 # --- LOAD MODEL ENGINE (The Final Fix) ---
+import streamlit as st
+import tensorflow as tf
+import cv2
+import numpy as np
+import smtplib
+import os  # <--- YE LINE ADD KARNA ZAROORI HAI
+from email.message import EmailMessage
+from datetime import datetime
+import time
+
+# ... (baaki ka page setup aur sidebar code wahi rahega)
+
 @st.cache_resource
 def load_my_model():
-    import tensorflow as tf
-    import os
-
+    # Model path
     model_path = 'final_improved_model.h5'
     
+    # Check if file exists using os
     if not os.path.exists(model_path):
-        st.error(f"File {model_path} not found in GitHub repository!")
+        st.error(f"Error: {model_path} not found!")
         return None
 
     try:
-        # Keras 2 models load karne ka sabse safe tarika Keras 3 environment mein:
-        # Hum compile=False rakhenge taaki optimizer aur loss functions load na ho (jo inference mein chahiye bhi nahi)
-        model = tf.keras.models.load_model(model_path, compile=False)
-        return model
+        # Keras 2 compatible loading for Keras 3 environments
+        # Hum compile=False rakhte hain kyunki inference mein optimizer ki zaroorat nahi hoti
+        custom_objects = {
+            'InputLayer': tf.keras.layers.InputLayer,
+            'Conv2D': tf.keras.layers.Conv2D
+        }
+        
+        return tf.keras.models.load_model(
+            model_path, 
+            compile=False, 
+            custom_objects=custom_objects
+        )
     except Exception as e:
-        # Agar compile=False se bhi na ho, toh ye "Generic Object" bypass try karein
-        try:
-            model = tf.keras.models.load_model(
-                model_path, 
-                custom_objects={'SafeConfigParser': None}, 
-                compile=False
-            )
-            return model
-        except Exception as e2:
-            st.error(f"Engine Error: {e2}")
-            return None
+        st.error(f"Engine Error: {e}")
+        return None
+
 # Global Model Assignment
 model = load_my_model()
 
