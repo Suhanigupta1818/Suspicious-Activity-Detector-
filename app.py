@@ -47,40 +47,20 @@ class PatchedInputLayer(InputLayer):
         kwargs.pop('optional', None)
         super().__init__(*args, **kwargs)
         
-# --- LOAD MODEL ---
-import os
-import tensorflow as tf
-import streamlit as st
-from tensorflow.keras.layers import InputLayer
-
-# --- KERAS 3 FIX: Manual Keyword Remover ---
-class LegacyInputLayer(InputLayer):
-    def __init__(self, *args, **kwargs):
-        # Ye do keywords hi saari fasaad ki jad hain, inhe nikal do
-        kwargs.pop('batch_shape', None)
-        kwargs.pop('optional', None)
-        super().__init__(*args, **kwargs)
-
+# --- LOAD MODEL (Modern Native Format) ---
 @st.cache_resource
 def load_my_model():
-    model_path = 'final_improved_model.h5'
+    model_path = 'final_improved_model.keras' # Extension change kiya
     if not os.path.exists(model_path):
-        st.error("Model file missing!")
+        st.error(f"Model file '{model_path}' GitHub par nahi mili!")
         return None
     try:
-        # Hum Keras ko bol rahe hain ki asli InputLayer ki jagah hamara 'Fixed' version use kare
-        custom_objects = {'InputLayer': LegacyInputLayer}
-        return tf.keras.models.load_model(
-            model_path, 
-            compile=False, 
-            custom_objects=custom_objects
-        )
+        # Naye format mein koi 'custom_objects' ki zaroorat nahi padti
+        return tf.keras.models.load_model(model_path, compile=False)
     except Exception as e:
         st.error(f"Final Loading Error: {e}")
         return None
-
-model = load_my_model()
-# --- FUNCTIONS ---
+     # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
         current_time = datetime.now().strftime("%I:%M %p | %d %b %Y")
