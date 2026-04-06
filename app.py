@@ -38,6 +38,15 @@ with st.sidebar:
     st.write("**Accuracy:** 80.00%")
     st.write("**Alert Mode:** Email Enabled 📧")
 
+from tensorflow.keras.layers import InputLayer
+
+class PatchedInputLayer(InputLayer):
+    def __init__(self, *args, **kwargs):
+        # Jo keywords error de rahe hain, unhe nikal do
+        kwargs.pop('batch_shape', None)
+        kwargs.pop('optional', None)
+        super().__init__(*args, **kwargs)
+        
 # --- LOAD MODEL ---
 @st.cache_resource
 def load_my_model():
@@ -46,10 +55,15 @@ def load_my_model():
         st.error(f"Model file '{model_path}' nahi mili! GitHub par check karein.")
         return None
     try:
-        # safe_mode=False legacy models ke liye zaroori hai
-        return tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
+        # Hum Keras ko bol rahe hain ki asli InputLayer ki jagah hamara Patched version use kare
+        custom_objects = {'InputLayer': PatchedInputLayer}
+        return tf.keras.models.load_model(
+            model_path, 
+            compile=False, 
+            custom_objects=custom_objects
+        )
     except Exception as e:
-        st.error(f"Final Loading Error: {e}")
+        st.error(f"Ultimate Loading Error: {e}")
         return None
 
 model = load_my_model()
