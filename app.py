@@ -52,18 +52,13 @@ class PatchedInputLayer(InputLayer):
 def load_my_model():
     model_path = 'final_improved_model.h5'
     if not os.path.exists(model_path):
-        st.error(f"Model file '{model_path}' nahi mili! GitHub par check karein.")
+        st.error("Model file missing!")
         return None
     try:
-        # Hum Keras ko bol rahe hain ki asli InputLayer ki jagah hamara Patched version use kare
-        custom_objects = {'InputLayer': PatchedInputLayer}
-        return tf.keras.models.load_model(
-            model_path, 
-            compile=False, 
-            custom_objects=custom_objects
-        )
+        # Puraane version mein ye ek baar mein load ho jayega
+        return tf.keras.models.load_model(model_path, compile=False)
     except Exception as e:
-        st.error(f"Ultimate Loading Error: {e}")
+        st.error(f"Load Error: {e}")
         return None
 
 model = load_my_model()
