@@ -48,25 +48,36 @@ class PatchedInputLayer(InputLayer):
         super().__init__(*args, **kwargs)
         
 # --- LOAD MODEL ---
+import os
+import tensorflow as tf
+import streamlit as st
+from tensorflow.keras.layers import InputLayer
+
+# --- KERAS 3 FIX: Manual Keyword Remover ---
+class LegacyInputLayer(InputLayer):
+    def __init__(self, *args, **kwargs):
+        # Ye do keywords hi saari fasaad ki jad hain, inhe nikal do
+        kwargs.pop('batch_shape', None)
+        kwargs.pop('optional', None)
+        super().__init__(*args, **kwargs)
+
 @st.cache_resource
 def load_my_model():
     model_path = 'final_improved_model.h5'
-    
     if not os.path.exists(model_path):
-        st.error("Model file missing in the repository!")
+        st.error("Model file missing!")
         return None
-
     try:
-        # Step 1: Keras ko 'safe_mode=False' ke saath load karne ki koshish karein
-        return tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
+        # Hum Keras ko bol rahe hain ki asli InputLayer ki jagah hamara 'Fixed' version use kare
+        custom_objects = {'InputLayer': LegacyInputLayer}
+        return tf.keras.models.load_model(
+            model_path, 
+            compile=False, 
+            custom_objects=custom_objects
+        )
     except Exception as e:
-        try:
-            # Step 2: Agar upar wala fail ho, toh legacy tf_keras use karein
-            import tf_keras
-            return tf_keras.models.load_model(model_path, compile=False)
-        except:
-            st.error(f"Ultimate Loading Error: {e}")
-            return None
+        st.error(f"Final Loading Error: {e}")
+        return None
 
 model = load_my_model()
 # --- FUNCTIONS ---
