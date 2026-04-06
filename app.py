@@ -48,20 +48,38 @@ class PatchedInputLayer(InputLayer):
         super().__init__(*args, **kwargs)
         
 # --- LOAD MODEL (Modern Native Format) ---
+import os
+import tensorflow as tf
+import streamlit as st
+from tensorflow.keras.layers import InputLayer
+
+# Keras 3 compatibility fix for legacy layers
+class PatchedInputLayer(InputLayer):
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('batch_shape', None)
+        kwargs.pop('optional', None)
+        super().__init__(*args, **kwargs)
+
 @st.cache_resource
 def load_my_model():
-    model_path = 'final_improved_model.keras' # Extension change kiya
+    model_path = 'final_improved_model.keras' # Ensure this file is uploaded!
     if not os.path.exists(model_path):
-        st.error(f"Model file '{model_path}' GitHub par nahi mili!")
+        st.error(f"Model file '{model_path}' not found in GitHub root!")
         return None
     try:
-        # Naye format mein koi 'custom_objects' ki zaroorat nahi padti
-        return tf.keras.models.load_model(model_path, compile=False)
+        custom_objects = {'InputLayer': PatchedInputLayer}
+        return tf.keras.models.load_model(
+            model_path, 
+            compile=False, 
+            custom_objects=custom_objects,
+            safe_mode=False
+        )
     except Exception as e:
         st.error(f"Final Loading Error: {e}")
         return None
-        # --- MODEL INITIALIZATION ---
-model = load_my_model()  # <--- YE LINE MISSING HAI, ISE ADD KARO
+
+# INITIALIZE MODEL
+model = load_my_model() # <--- YE LINE MISSING HAI, ISE ADD KARO
      # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
