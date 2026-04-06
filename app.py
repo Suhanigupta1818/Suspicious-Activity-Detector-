@@ -47,26 +47,27 @@ class PatchedInputLayer(InputLayer):
         kwargs.pop('optional', None)
         super().__init__(*args, **kwargs)
         
-# --- LOAD MODEL (Modern Native Format) ---
 import os
 import tensorflow as tf
 import streamlit as st
 from tensorflow.keras.layers import InputLayer
 
-# Keras 3 compatibility fix for legacy layers
+# --- KERAS 3 COMPATIBILITY PATCH ---
 class PatchedInputLayer(InputLayer):
     def __init__(self, *args, **kwargs):
+        # Ye keywords hi error de rahe hain, inhen nikal do
         kwargs.pop('batch_shape', None)
         kwargs.pop('optional', None)
         super().__init__(*args, **kwargs)
 
 @st.cache_resource
 def load_my_model():
-    model_path = 'final_improved_model.keras' # Ensure this file is uploaded!
+    model_path = 'final_improved_model.keras' # Ensure you uploaded the .keras file
     if not os.path.exists(model_path):
-        st.error(f"Model file '{model_path}' not found in GitHub root!")
+        st.error(f"Model file '{model_path}' not found!")
         return None
     try:
+        # Keras ko batao ki 'InputLayer' ki jagah hamara patched version use kare
         custom_objects = {'InputLayer': PatchedInputLayer}
         return tf.keras.models.load_model(
             model_path, 
@@ -78,7 +79,7 @@ def load_my_model():
         st.error(f"Final Loading Error: {e}")
         return None
 
-# INITIALIZE MODEL
+# Model Initialization
 model = load_my_model() # <--- YE LINE MISSING HAI, ISE ADD KARO
      # --- FUNCTIONS ---
 def send_email_alert(confidence):
