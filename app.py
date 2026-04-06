@@ -38,22 +38,31 @@ with st.sidebar:
     st.write("**Alert Mode:** Email Enabled 📧")
 
 # --- LOAD MODEL ---
+import os
+import tensorflow as tf
+import streamlit as st
+
 @st.cache_resource
 def load_my_model():
-    import tensorflow as tf
-    import os
-    
     model_path = 'final_improved_model.h5'
+    
     if not os.path.exists(model_path):
+        st.error("Model file missing!")
         return None
-        
+
     try:
-        # Jab environment 2.15.0 hoga, toh ye line 100% chalegi
+        # 2.15.0 environment mein ye bina kisi error ke chalega
         return tf.keras.models.load_model(model_path, compile=False)
     except Exception as e:
-        st.error(f"Loading Error: {e}")
-        return None
-# Global Model Assignment
+        # Agar phir bhi InputLayer ka panga ho, toh ye line 
+        # model ko "Keras 2" style mein load karne pe majboor karegi
+        try:
+            import keras
+            return keras.models.load_model(model_path, compile=False)
+        except:
+            st.error(f"Final Loading Error: {e}")
+            return None
+
 model = load_my_model()
 
 # --- FUNCTIONS ---
