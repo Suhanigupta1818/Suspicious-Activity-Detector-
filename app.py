@@ -60,6 +60,8 @@ def load_my_model():
     except Exception as e:
         st.error(f"Final Loading Error: {e}")
         return None
+        # --- MODEL INITIALIZATION ---
+model = load_my_model()  # <--- YE LINE MISSING HAI, ISE ADD KARO
      # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
