@@ -38,33 +38,20 @@ with st.sidebar:
     st.write("**Alert Mode:** Email Enabled 📧")
 
 # --- LOAD MODEL ---
-import os
-import tensorflow as tf
-import streamlit as st
-
 @st.cache_resource
 def load_my_model():
     model_path = 'final_improved_model.h5'
-    
     if not os.path.exists(model_path):
-        st.error("Model file missing!")
+        st.error(f"Model file '{model_path}' nahi mili! GitHub par check karein.")
+        return None
+    try:
+        # safe_mode=False legacy models ke liye zaroori hai
+        return tf.keras.models.load_model(model_path, compile=False, safe_mode=False)
+    except Exception as e:
+        st.error(f"Final Loading Error: {e}")
         return None
 
-    try:
-        # 2.15.0 environment mein ye bina kisi error ke chalega
-        return tf.keras.models.load_model(model_path, compile=False)
-    except Exception as e:
-        # Agar phir bhi InputLayer ka panga ho, toh ye line 
-        # model ko "Keras 2" style mein load karne pe majboor karegi
-        try:
-            import keras
-            return keras.models.load_model(model_path, compile=False)
-        except:
-            st.error(f"Final Loading Error: {e}")
-            return None
-
 model = load_my_model()
-
 # --- FUNCTIONS ---
 def send_email_alert(confidence):
     try:
@@ -137,7 +124,8 @@ with col2:
             
             if frames is not None:
                 test_input = np.expand_dims(frames, axis=0).astype('float32') / 255.0
-                prediction = model.predict(test_input)[0][0]
+                res = model.predict(test_input)
+                prediction = float(np.squeeze(res))
                 
                 st.write("### Detection Result:")
                 if prediction > 0.5:
@@ -163,4 +151,4 @@ with col2:
         st.info("Waiting for video upload to begin scanning...")
 
 st.divider()
-st.caption("Developed by Suhani | AI & ML Project 2024")
+st.caption("Developed by Suhani | AI & ML Project 2026")
