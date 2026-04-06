@@ -40,40 +40,19 @@ with st.sidebar:
 # --- LOAD MODEL ---
 @st.cache_resource
 def load_my_model():
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import TimeDistributed, LSTM, Dense, GlobalAveragePooling2D, Input
-    from tensorflow.keras.applications import MobileNetV2
+    import tensorflow as tf
     import os
-
-    model_path = 'final_improved_model.h5'
     
+    model_path = 'final_improved_model.h5'
     if not os.path.exists(model_path):
-        st.error(f"File {model_path} not found!")
         return None
-
-    try:
-        # 1. Architecture manually rebuild karein (exactly as you trained it)
-        # Input shape: (15 frames, 64x64 pixels, 3 channels)
-        base_model = MobileNetV2(weights=None, include_top=False, input_shape=(64, 64, 3))
         
-        rebuilt_model = Sequential([
-            Input(shape=(15, 64, 64, 3)), 
-            TimeDistributed(base_model),
-            TimeDistributed(GlobalAveragePooling2D()),
-            LSTM(64),
-            Dense(1, activation='sigmoid')
-        ])
-
-        # 2. Sirf weights load karein (Ye deserialization error ko bypass kar deta hai)
-        rebuilt_model.load_weights(model_path)
-        return rebuilt_model
-
+    try:
+        # Jab environment 2.15.0 hoga, toh ye line 100% chalegi
+        return tf.keras.models.load_model(model_path, compile=False)
     except Exception as e:
-        st.error(f"Manual Load Error: {e}")
-        # Agar architecture thoda alag tha (e.g. LSTM units 128 thi), toh error aayega.
-        # Use case mein bas upar ki layers match kar dena.
+        st.error(f"Loading Error: {e}")
         return None
-
 # Global Model Assignment
 model = load_my_model()
 
