@@ -37,41 +37,36 @@ with st.sidebar:
     st.write("**Alert Mode:** Email Enabled 📧")
 
 # --- LOAD MODEL ENGINE ---
-# --- LOAD MODEL ENGINE (The Ultimate Bypass) ---
-# --- LOAD MODEL ENGINE (The Professional Bypass) ---
+# --- LOAD MODEL ENGINE (The Final Fix) ---
 @st.cache_resource
 def load_my_model():
     import tensorflow as tf
-    from tensorflow.keras.layers import InputLayer, Conv2D
-
-    # 1. Custom InputLayer to ignore Keras 3 specific keys
-    class CustomInputLayer(InputLayer):
-        def __init__(self, *args, **kwargs):
-            for key in ['batch_shape', 'optional', 'ragged', 'sparse']:
-                kwargs.pop(key, None)
-            super().__init__(*args, **kwargs)
-
-    # 2. Custom Conv2D to ignore 'dtype' policy mismatch
-    class CustomConv2D(Conv2D):
-        def __init__(self, *args, **kwargs):
-            if 'dtype' in kwargs and isinstance(kwargs['dtype'], dict):
-                kwargs.pop('dtype')
-            super().__init__(*args, **kwargs)
+    
+    model_path = 'final_improved_model.h5'
+    
+    # Check if file exists
+    if not os.path.exists(model_path):
+        return None
 
     try:
-        # Load using a custom object scope to map Keras 3 classes to our bypass classes
+        # Keras 3 often fails with custom layers from Keras 2
+        # We use compile=False to avoid loading training configurations
+        # And we map any missing layers to standard Keras layers
         custom_objects = {
-            'InputLayer': CustomInputLayer,
-            'Conv2D': CustomConv2D,
-            'DTypePolicy': lambda **x: None # Ignores the policy error
+            'InputLayer': tf.keras.layers.InputLayer,
+            'BatchNormalization': tf.keras.layers.BatchNormalization,
+            'Conv2D': tf.keras.layers.Conv2D
         }
         
-        return tf.keras.models.load_model(
-            'final_improved_model.h5', 
-            compile=False, 
-            custom_objects=custom_objects
+        curr_model = tf.keras.models.load_model(
+            model_path, 
+            custom_objects=custom_objects, 
+            compile=False
         )
+        return curr_model
     except Exception as e:
+        # Agar ab bhi error aaye, toh hum architecture manually rebuild karke 
+        # sirf weights load kar sakte hain, par pehle ye try karein.
         st.error(f"Engine Error: {e}")
         return None
 
