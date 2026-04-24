@@ -18,7 +18,7 @@ class PatchedInputLayer(InputLayer):
 
 # --- CONFIGURATION ---
 SENDER_EMAIL = "gsuhani053@gmail.com"
-SENDER_PASSWORD = "*" 
+SENDER_PASSWORD = "kuem fujp pnmz oyxe" 
 RECEIVER_EMAIL = "gsuhani053@gmail.com"
 
 # --- PAGE SETUP ---
